@@ -1,0 +1,104 @@
+---
+title: "Practical Machine Learning Project Assignment"
+output: html_document
+---
+# 1. Cleaning data
+
+```{r message=FALSE, warning=FALSE}
+library(caret)
+library(rattle)
+```
+
+
+```{r}
+builddat=read.csv("C:/Users/Thai Thanh/Documents/Data_Analysis/8 Practical Machine Learning/data/pml-training.csv",header = T,row.names = 1)
+validation=read.csv("C:/Users/Thai Thanh/Documents/Data_Analysis/8 Practical Machine Learning/data/pml-testing.csv",header = T,row.names = 1)
+```
+
+```{r}
+set.seed(123)
+inTrain=createDataPartition(y=builddat$classe,p=0.7,list = F)
+traindat=builddat[inTrain,]
+testdat=builddat[-inTrain,]
+dim(traindat)
+dim(testdat)
+```
+
+
+```{r}
+# Remove zero covariates
+nsv=nearZeroVar(traindat,saveMetrics = T)
+traindat=traindat[,!nsv$nzv]
+testdat=testdat[,!nsv$nzv]
+dim(traindat)
+dim(testdat)
+```
+
+```{r}
+# Remove variables that are mostly NA
+findNA=apply(traindat,2,function(x) (mean(is.na(x))>0.95))
+traindat=traindat[,!findNA]
+testdat=testdat[,!findNA]
+dim(traindat)
+dim(testdat)
+```
+
+```{r}
+#remove unrelated variables
+traindat=traindat[,-(1:4)]
+testdat=testdat[,-(1:4)]
+dim(traindat)
+dim(testdat)
+```
+
+# 2. Prediction Model Building
+
+## Decision Tree
+
+```{r}
+# Fit model
+set.seed(123)
+treeFit=train(classe~.,data=traindat,method="rpart")
+fancyRpartPlot(treeFit$finalModel)
+treePred=predict(treeFit,newdata = testdat)
+confusionMatrix(treePred,testdat$classe)
+```
+
+## Random Forest
+
+```{r}
+set.seed(123)
+rfFit=train(classe~.,data=traindat,method="rf",
+            trControl=trainControl(method = "none"))
+rfFit
+rfFit$finalModel
+plot(varImp(rfFit))
+rfPred=predict(rfFit,testdat)
+confusionMatrix(rfPred,testdat$classe)
+```
+
+## Boosting
+
+```{r}
+set.seed(123)
+boostControl=trainControl(method = "cv", number = 5)
+boostFit=train(classe~.,data=traindat,method="gbm",
+               trControl=boostControl,verbose=F)
+boostFit
+boostFit$finalModel
+boostPred=predict(boostFit,testdat)
+confusionMatrix(boostPred,testdat$classe)
+```
+
+# 3. Select Model
+
+We see that the Random Forest model have the highest accuracy, so we use Random Forest to predict the test dataset.
+
+```{r}
+testPred=predict(rfFit,validation)
+testPred
+```
+
+
+
+
