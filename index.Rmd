@@ -56,24 +56,33 @@ dim(testdat)
 ## Decision Tree
 
 ```{r}
-# Fit model
 set.seed(123)
+# Fit model
 treeFit=train(classe~.,data=traindat,method="rpart")
 fancyRpartPlot(treeFit$finalModel)
+# Prediction on test data set
 treePred=predict(treeFit,newdata = testdat)
+# Compute out of sample error
 confusionMatrix(treePred,testdat$classe)
 ```
 
 ## Random Forest
 
 ```{r}
+# Fit model
 set.seed(123)
+# Using 3-fold cross validation method
+# to choose number of variables used at each split
+# Then using the chosen number of variables to fit model
+rfControl=trainControl(method="cv", number=3,
+                       verboseIter=FALSE)
 rfFit=train(classe~.,data=traindat,method="rf",
-            trControl=trainControl(method = "none"))
+            trControl=rfControl)
 rfFit
 rfFit$finalModel
-plot(varImp(rfFit))
+# Prediction on test data set
 rfPred=predict(rfFit,testdat)
+# Compute out of sample error
 confusionMatrix(rfPred,testdat$classe)
 ```
 
@@ -81,12 +90,17 @@ confusionMatrix(rfPred,testdat$classe)
 
 ```{r}
 set.seed(123)
+# Use 5-fold cross validation method 
+# to choose interaction depth and number of trees 
+# Then using the chosen interaction depth and number of trees to fit model
 boostControl=trainControl(method = "cv", number = 5)
 boostFit=train(classe~.,data=traindat,method="gbm",
                trControl=boostControl,verbose=F)
 boostFit
 boostFit$finalModel
+# Prediction on test data set
 boostPred=predict(boostFit,testdat)
+# Compute out of sample error
 confusionMatrix(boostPred,testdat$classe)
 ```
 
